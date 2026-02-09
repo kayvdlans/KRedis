@@ -56,20 +56,34 @@ public abstract record RespValue
         }
     }
 
-    public sealed record Array(IReadOnlyList<RespValue> Items, bool IsNull = false) : RespValue
+    public sealed record Array(RespValue[] Items, bool IsNull = false) : RespValue
     {
         public override byte[] AsResponse()
         {
             if (IsNull)
                 return "*-1\r\n"u8.ToArray();
 
-            var resp = new StringBuilder($"*{Items.Count}\r\n");
-            foreach (RespValue item in Items)
+            byte[] header = Encoding.ASCII.GetBytes($"*{Items.Length}\r\n");
+
+            int totalLength = header.Length;
+            var parts = new byte[Items.Length][];
+            for (var i = 0; i < Items.Length; i++)
             {
-                resp.Append(item.AsResponse());
+                parts[i] = Items[i].AsResponse();
+                totalLength += parts[i].Length;
             }
 
-            return Encoding.ASCII.GetBytes(resp.ToString());
+            var response = new byte[totalLength];
+            Buffer.BlockCopy(header, 0, response, 0, header.Length);
+
+            int offset = header.Length;
+            foreach (byte[] bytes in parts)
+            {
+                Buffer.BlockCopy(bytes, 0, response, offset, bytes.Length);
+                offset += bytes.Length;
+            }
+
+            return response;
         }
     }
 }

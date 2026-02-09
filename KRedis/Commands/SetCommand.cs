@@ -1,21 +1,23 @@
+using System.Text;
 using KRedis.Data;
 using KRedis.Resp;
 
 namespace KRedis.Commands;
 
-public sealed class SetCommand(IReadOnlyList<RespValue> items) : ICommand
+public sealed class SetCommand(ReadOnlyMemory<RespValue> items) : ICommand
 {
     public RespValue Execute()
     {
-        if (items.Count < 3 ||
-            items[1] is not RespValue.BulkString setKey || setKey.IsNull ||
-            items[2] is not RespValue.BulkString value || value.IsNull)
+        ReadOnlySpan<RespValue> span = items.Span;
+        if (span.Length < 2 ||
+            span[0] is not RespValue.BulkString setKey || setKey.IsNull ||
+            span[1] is not RespValue.BulkString value || value.IsNull)
             return new RespValue.SimpleError("ERR wrong number of arguments for 'set' command");
 
         DateTime? expireAt = null;
-        for (var i = 3; i < items.Count; i++)
+        for (var i = 2; i < span.Length; i++)
         {
-            if (items[i] is not RespValue.BulkString arg || arg.IsNull)
+            if (span[i] is not RespValue.BulkString arg || arg.IsNull)
                 return new RespValue.SimpleError("ERR invalid argument for 'set' command");
 
             switch (arg.Value.ToUpperInvariant())
@@ -46,10 +48,10 @@ public sealed class SetCommand(IReadOnlyList<RespValue> items) : ICommand
 
     private bool TryGetArgAsLong(int index, out long value)
     {
-        value = 0;
-        return index + 1 < items.Count
-            && items[index + 1] is RespValue.BulkString str
-            && !str.IsNull
-            && long.TryParse(str.Value, out value);
+        value = default;
+        return index < items.Length
+               && items.Span[index] is RespValue.BulkString str
+               && !str.IsNull
+               && long.TryParse(str.Value, out value);
     }
 }

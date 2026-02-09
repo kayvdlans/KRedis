@@ -4,16 +4,16 @@ namespace KRedis.Commands;
 
 public static class CommandFactory
 {
-    public static ICommand? TryCreateCommand(IReadOnlyList<RespValue> items, out RespValue error)
+    public static ICommand? TryCreateCommand(ReadOnlyMemory<RespValue> items, out RespValue error)
     {
         error = null!;
-        if (items.Count == 0)
+        if (items.Length == 0)
         {
             error = new RespValue.SimpleError("ERR empty command");
             return null;
         }
 
-        if (items[0] is not RespValue.BulkString cmd || cmd.IsNull)
+        if (items.Span[0] is not RespValue.BulkString cmd || cmd.IsNull)
         {
             error = new RespValue.SimpleError("ERR protocol error");
             return null;
@@ -24,9 +24,9 @@ public static class CommandFactory
         return name switch
         {
             "PING" => new PingCommand(),
-            "ECHO" => new EchoCommand(items),
-            "GET" => new GetCommand(items),
-            "SET" => new SetCommand(items),
+            "ECHO" => new EchoCommand(items[1..]),
+            "GET" => new GetCommand(items[1..]),
+            "SET" => new SetCommand(items[1..]),
             _ => null
         };
     }

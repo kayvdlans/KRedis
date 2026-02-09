@@ -1,8 +1,23 @@
 namespace KRedis.Data;
 
-public sealed class RedisValue(RedisValueType type, byte[] data, DateTime? expireAt = null)
+public class RedisValue
 {
-    public RedisValueType Type { get; } = type;
-    public DateTime? ExpireAt { get; } = expireAt;
-    public byte[] Data { get; } = data;
+    private RedisValue(RedisValueType type, DateTime? expireAt)
+    {
+        Type = type;
+        ExpireAt = expireAt;
+    }
+
+    public RedisValueType Type { get; }
+    public DateTime? ExpireAt { get; }
+
+    public sealed class String(byte[] data, DateTime? expireAt = null) : RedisValue(RedisValueType.String, expireAt)
+    {
+        public byte[] Data { get; } = data;
+    }
+
+    public sealed class List(List<byte[]> data) : RedisValue(RedisValueType.List, null)
+    {
+        public List<byte[]> Data { get; } = data;
+    }
 }

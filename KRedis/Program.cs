@@ -83,7 +83,7 @@ static async Task HandleClient(Socket client)
     }
 }
 
-static RespValue HandleCommand(IReadOnlyList<RespValue> items)
+static RespValue HandleCommand(ReadOnlyMemory<RespValue> items)
 {
     ICommand? command = CommandFactory.TryCreateCommand(items, out RespValue error);
     return command is not null ? command.Execute() : error;
